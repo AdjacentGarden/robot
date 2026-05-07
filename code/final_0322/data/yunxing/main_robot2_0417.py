@@ -1,0 +1,225 @@
+import os
+import torch
+import numpy as np
+import threading
+from collections import deque
+import time
+import pyaudio
+import sys
+from vad_module import SileroVAD
+from zipformer import set_model, run_model, post_process, read_vocab
+from toolmain_test import UniversalAgent
+_CURR_DIR = os.path.dirname(os.path.abspath(__file__))
+_ROOT = os.path.dirname(os.path.dirname(_CURR_DIR))
+if _ROOT not in sys.path:
+    sys.path.append(_ROOT) 
+from tts_queue import TTSQueue
+import speaker
+import multiprocessing
+
+# ! config
+class Config:
+    ENCODER_PATH = "./model/encoder-epoch-99-avg-1.rknn"
+    DECODER_PATH = "./model/decoder-epoch-99-avg-1.rknn"
+    JOINER_PATH = "./model/joiner-epoch-99-avg-1.rknn"
+    VOCAB_PATH = "./model/vocab.txt"
+    LLM_MODE = "local"
+    LLM_LOCAL = "http://localhost:8080/v1"
+    API_KEY = "sk-ff528950477e421999763986692ce67e"
+    # ! minimum sentence interval
+    MIN_SILENCE_MS = 400
+    # ! minimum voice duration
+    MIN_SEGMENT_SEC = 0.4
+    # ! voice chunk size
+    CHUNK_SIZE = 512
+    SAMPLE_RATE = 16000
+
+def list_audio_devices():
+    """打印所有可用音频输入设备，方便选择编号"""
+    p = pyaudio.PyAudio()
+    print("\n========== 可用音频输入设备 ==========")
+    for i in range(p.get_device_count()):
+        info = p.get_device_info_by_index(i)
+        if info['maxInputChannels'] > 0:
+            print(f" [{i}] {info['name']} (采样率: {int(info['defaultSampleRate'])}Hz)")
+    print("=======================================\n")
+    p.terminate()
+
+def get_mic_stream(device_index=None, chunk_size=512, sample_rate=16000):
+    """
+    实时麦克风音频流生成器
+    device_index 对应关系（根据你的 arecord -l）：
+    运行时会打印完整列表，以实际输出为准
+    通常:
+    板载 ES8388 (card 1) → pyaudio 里找名字含 ES8323 的
+    USB 摄像头麦克风 (card 6) → pyaudio 里找名字含 Camera 或 USB 的
+    如果 device_index=None 则使用系统默认麦克风
+    """
+    p = pyaudio.PyAudio()
+
+    # 如果没指定设备，自动找第一个可用输入设备
+    if device_index is None:
+        for i in range(p.get_device_count()):
+            info = p.get_device_info_by_index(i)
+            if info['maxInputChannels'] > 0:
+                device_index = i
+                print(f">>> 自动选择音频设备 [{i}]: {info['name']}")
+                break
+
+    try:
+        stream = p.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=sample_rate,
+            input=True,
+            input_device_index=device_index,
+            frames_per_buffer=chunk_size,
+        )
+    except OSError as e:
+        print(f"[错误] 无法打开音频设备 [{device_index}]: {e}")
+        print("请运行 list_audio_devices() 查看可用设备，修改 MIC_DEVICE_INDEX")
+        p.terminate()
+        return
+
+    print(f">>> 麦克风已打开，开始监听... (按 Ctrl+C 退出)")
+    # try:
+    while True:
+        chunk = stream.read(chunk_size, exception_on_overflow=False)
+        yield chunk
+
+class RobotAssistant:
+    def __init__(self):
+        print("--- [系统初始化] 机器人启动 ---")
+        self.vad = SileroVAD(min_silence_ms=Config.MIN_SILENCE_MS)
+        self.pre_roll_buffer = deque(maxlen=15)
+        self.recorded_audio = []
+        self.is_recording = False
+        self.is_busy = False
+
+        class Args:
+            encoder_model_path = Config.ENCODER_PATH
+            decoder_model_path = Config.DECODER_PATH
+            joiner_model_path = Config.JOINER_PATH
+            target = "rk3588"
+            device_id = None
+
+        self.asr_vocab = read_vocab(Config.VOCAB_PATH)
+        self.asr_model = set_model(Args())
+        self.asr_model.init_encoder_input()
+
+        self.agent = UniversalAgent(
+            mode=Config.LLM_MODE,
+            local_url=Config.LLM_LOCAL,
+            api_key=Config.API_KEY,
+            x=1, y=4
+        )
+
+        self.tts_queue = TTSQueue(self.agent.tts)
+        speaker.init(self.tts_queue)
+        ctx = multiprocessing.get_context('spawn')
+        main_mp_q = ctx.Queue()
+        speaker.init_mp_queue(main_mp_q)
+
+        def _bridge():
+            while True:
+                text = speaker._mp_q.get()
+                self.tts_queue.speak(text)
+
+        threading.Thread(target=_bridge, daemon=True).start()
+
+
+    def _think_and_speak_thread(self, audio_data_list):
+        """后台线程：ASR -> LLM -> TTS"""
+        try:
+            print("开始时间：", time.time())
+            audio_bytes = b"".join(audio_data_list)
+            audio_np = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
+            audio_tensor = torch.tensor(audio_np, dtype=torch.float32)
+
+            hyp, timestamp = run_model(self.asr_model, audio_tensor, sample_rate=16000)
+            text, _ = post_process(hyp, self.asr_vocab, timestamp)
+
+            if text.strip():
+                print(f"\n[用户]: {text}")
+                response = self.agent.run_workflow(text)
+                print(f"[机器人]: {response}")
+                if response:
+                    self.tts_queue.speak(response)
+                self.tts_queue.wait_until_done()
+            else:
+                print("[DEBUG] ASR 结果为空，忽略本次识别")
+
+        except Exception as e:
+            print(f"[系统错误]: {e}")
+        finally:
+            print("\n>>> 回复完毕，重新开始监听...")
+            self.recorded_audio = []
+            self.is_recording = False
+            self.pre_roll_buffer.clear()
+            self.vad.reset()
+            self.is_busy = False
+
+    def run_forever(self, stream_source):
+        """主循环：持续消耗音频流，忙碌时丢弃"""
+        print("\n>>> 机器人已就绪，请说话...")
+        chunk_count = 0
+        for chunk in stream_source:
+            chunk_count += 1
+            if self.is_busy:
+                continue
+
+            self.pre_roll_buffer.append(chunk)
+            is_speaking, is_final, prob = self.vad.process(chunk)
+
+            if chunk_count % 50 == 0:
+                print(f"[DEBUG] chunk#{chunk_count} | prob={prob:.3f} | speaking={is_speaking}")
+
+            if is_speaking and not self.is_recording:
+                print(f"[DEBUG] 检测到语音开始 chunk#{chunk_count}, prob={prob:.3f}")
+                self.is_recording = True
+                self.recorded_audio = list(self.pre_roll_buffer)
+                self.pre_roll_buffer.clear()
+            elif self.is_recording:
+                self.recorded_audio.append(chunk)
+
+            if is_final:
+                duration = (len(self.recorded_audio) * Config.CHUNK_SIZE) / Config.SAMPLE_RATE
+                print(f"[DEBUG] 语音结束，duration={duration:.2f}s")
+                if duration >= Config.MIN_SEGMENT_SEC:
+                    print(f"\n[系统] 锁定监听，开启后台任务...")
+                    self.is_busy = True
+                    task_thread = threading.Thread(
+                        target=self._think_and_speak_thread,
+                        args=(list(self.recorded_audio),)
+                    )
+                    task_thread.start()
+                else:
+                    print(f"[DEBUG] 片段太短（{duration:.2f}s），丢弃")
+                    self.recorded_audio = []
+                    self.is_recording = False
+                    self.vad.reset()
+
+        print(f"\n[DEBUG] 流结束，共处理 {chunk_count} 个 chunk")
+
+# ============================================================
+# 主程序入口
+# ============================================================
+if __name__ == "__main__":
+    # 第一步：查看设备列表，确认编号
+    list_audio_devices()
+    # 第二步：根据上面的打印结果设置设备编号
+    # -----------------------------------------------
+    # None = 系统默认（先试这个）
+    # 板载 ES8388 麦克风 (card 1) → 填对应编号
+    # USB 摄像头麦克风 (card 6) → 填对应编号
+    # -----------------------------------------------
+    MIC_DEVICE_INDEX = 6  # ← 如果默认不对，改成具体数字
+
+    assistant = RobotAssistant()
+
+    mic_stream = get_mic_stream(
+        device_index=MIC_DEVICE_INDEX,
+        chunk_size=Config.CHUNK_SIZE,
+        sample_rate=Config.SAMPLE_RATE
+    )
+    assistant.run_forever(mic_stream)

@@ -1,0 +1,14 @@
+{
+    "short_term_x": [
+        {
+            "role": "user",
+            "content": "现在是几个人用雷达需要确定一下"
+        },
+        {
+            "role": "assistant",
+            "content": "好的，已经停止 ArUco 导航。"
+        }
+    ],
+    "cache_y": [],
+    "long_term": ""
+}

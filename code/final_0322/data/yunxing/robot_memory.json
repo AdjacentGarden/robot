@@ -1,0 +1,14 @@
+{
+    "short_term_x": [
+        {
+            "role": "user",
+            "content": "请识别我当前的首饰"
+        },
+        {
+            "role": "assistant",
+            "content": "好的，请在镜头前做出手势，我来识别一下。"
+        }
+    ],
+    "cache_y": [],
+    "long_term": ""
+}

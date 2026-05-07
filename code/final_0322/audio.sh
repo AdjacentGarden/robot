@@ -1,0 +1,1 @@
+aplay -D hw:1,0 /usr/share/sounds/alsa/Front_Center.wav
