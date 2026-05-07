@@ -34,8 +34,8 @@ pullup_system = PullupCountingSystem()
 pushup_system = PushupCountingSystem()
 squat_system = SquatCountingSystem()
 
-def set_pet_motor_command_queue(motor_command_queue):
-    pet_system.set_motor_command_queue(motor_command_queue)
+def set_pet_motor_board(board):
+    pet_system.set_motor_board(board)
 
 def _read_and_delete(filepath):
     if os.path.exists(filepath):

@@ -1,6 +1,5 @@
 import time
 import threading
-import multiprocessing
 import subprocess
 import socket
 import os
@@ -225,10 +224,10 @@ def send_device_command():
     # 参数校验
     if not req_data or not all(k in req_data for k in ['device_type', 'code', 'command']):
         return jsonify({"code":400,"message":"参数缺失"}), 400
-    
+
     device = req_data["device_type"]
     cmd = req_data["command"]
-    
+
     # 设备/命令校验 - 特殊处理搜索设备的check命令
     if device != "search" or cmd != "check":
         if device not in DEVICE_COMMAND_MAP or cmd not in DEVICE_COMMAND_MAP[device]:
@@ -545,7 +544,7 @@ def get_mic_stream(chunk_size=512, sample_rate=16000):
         bufsize=0,
     )
 
-    print(f">>> 麦克风已打开: {MIC_DEVICE} (arecord)")
+    print(f"麦克风已打开: {MIC_DEVICE}")
     print('start recording...')
 
     try:
@@ -610,41 +609,6 @@ def _stop_chassis_motion():
         _set_chassis_motion(0.0, 0.0)
     except Exception as e:
         print(f"[Chassis] 停车失败: {e}")
-
-
-class ChassisMotorCommandDispatcher:
-    def __init__(self, board_obj, *, queue_size: int = 64):
-        self.board = board_obj
-        self.queue = multiprocessing.get_context("spawn").Queue(maxsize=queue_size)
-        self._thread = threading.Thread(
-            target=self._run,
-            daemon=True,
-            name="pet-motor-command-dispatcher",
-        )
-        self._thread.start()
-
-    def _run(self):
-        while True:
-            command = self.queue.get()
-            while True:
-                try:
-                    command = self.queue.get_nowait()
-                except Exception:
-                    break
-            if command is None:
-                break
-            try:
-                if not isinstance(command, dict) or command.get("type") != "set_motor":
-                    continue
-                speed_right = float(command.get("speed_right", 0.0))
-                speed_left = float(command.get("speed_left", 0.0))
-                max_speed = int(command.get("max_speed", 140))
-                self.board.set_motor_speed([
-                    [1, float(max_speed * speed_right)],
-                    [2, float(max_speed * speed_left * -1)],
-                ])
-            except Exception as e:
-                print(f"[ChassisQueue] 宠物子进程电机命令执行失败: {e}")
 
 
 def _extract_step_count(text: str) -> int:
@@ -816,14 +780,7 @@ class HeadPoseManager:
         exercise = str(exercise or "").strip().lower()
         with self._pose_lock:
             self._fitness_session_token += 1
-            token = self._fitness_session_token
         self.move_for_fitness_task(exercise, reason=f"{exercise}计数启动前调整姿态")
-        threading.Thread(
-            target=self._monitor_fitness_session,
-            args=(token, exercise, system_getter),
-            daemon=True,
-            name=f"fitness-head-{exercise}",
-        ).start()
 
     def end_fitness_session(self, exercise: str = ""):
         with self._pose_lock:
@@ -1317,7 +1274,6 @@ class RuntimeBootstrap:
         self.robot = None
         self.board = None
         self.ros2_controller = None
-        self.pet_motor_dispatcher = None
         self.preloaded_components = {}
         self._bootstrap()
 
@@ -1335,13 +1291,12 @@ class RuntimeBootstrap:
         self.board = Board()
         self.board.enable_reception()
         self.preloaded_components["board"] = self.board
-        self.pet_motor_dispatcher = ChassisMotorCommandDispatcher(self.board)
-        self.logic_module.set_pet_motor_command_queue(self.pet_motor_dispatcher.queue)
-        self.preloaded_components["pet_motor_command_dispatcher"] = self.pet_motor_dispatcher
+        self.logic_module.set_pet_motor_board(self.board)
 
         self.ros2_controller = ROS2NavigationController(self.controller_cli_path)
         self.preloaded_components["ros2_navigation_controller"] = self.ros2_controller
 
+        _ensure_situp_support()
         self.preloaded_components["pet_tracking_system"] = getattr(self.logic_module, "pet_system", None)
         self.preloaded_components["face_recognition_system"] = getattr(self.logic_module, "face_system", None)
         self.preloaded_components["situp_counting_system"] = getattr(self.logic_module, "situp_system", None)
@@ -1382,15 +1337,29 @@ class RuntimeBootstrap:
 
     def _warmup_pet_detector(self):
         try:
-            from final_0418.llm.pet_camera import RKNNDetector
-
-            detector = RKNNDetector(self.logic_module.pet_system.model_path)
-            detector.release()
+            self.logic_module.pet_system.preload()
+            self.preloaded_components["pet_detector"] = self.logic_module.pet_system.detector
             print("[Bootstrap] 宠物检测 RKNN warmup 完成")
         except Exception as e:
             print(f"[Bootstrap] 宠物检测 warmup 跳过: {e}")
 
     def _warmup_pose_detectors(self):
+        systems = [
+            ("pullup_detector", getattr(self.logic_module, "pullup_system", None)),
+            ("pushup_detector", getattr(self.logic_module, "pushup_system", None)),
+            ("squat_detector", getattr(self.logic_module, "squat_system", None)),
+            ("situp_detector", getattr(self.logic_module, "situp_system", None)),
+        ]
+        for key, system in systems:
+            if system is None or not callable(getattr(system, "preload_detector", None)):
+                continue
+            try:
+                system.preload_detector()
+                self.preloaded_components[key] = system.detector
+                print(f"[Bootstrap] {key} preload 瀹屾垚")
+            except Exception as e:
+                print(f"[Bootstrap] {key} preload 璺宠繃: {e}")
+        return
         detector_specs = [
             ("引体向上", "final_0418.llm.movement_count_2.pullup_camera_base_fps_1", "PullupDet"),
             ("俯卧撑", "final_0418.llm.movement_count_2.pushup_camera_base_fps_1", "PushupDet"),
@@ -1408,13 +1377,8 @@ class RuntimeBootstrap:
 
     def _warmup_face_model(self):
         try:
-            import torch
-            from facenet_pytorch import InceptionResnetV1
-
-            face_model = InceptionResnetV1(pretrained=None)
-            face_model.load_state_dict(torch.load(FACE_MODEL_PATH, map_location="cpu"), strict=False)
-            face_model.eval()
-            self.preloaded_components["face_embedding_model"] = face_model
+            self.logic_module.face_system.preload_model()
+            self.preloaded_components["face_embedding_model"] = self.logic_module.face_system.model
             print("[Bootstrap] 人脸特征模型 warmup 完成")
         except Exception as e:
             print(f"[Bootstrap] 人脸模型 warmup 跳过: {e}")

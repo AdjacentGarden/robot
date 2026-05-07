@@ -5,14 +5,12 @@ import numpy as np
 import time
 import math
 import signal
-import threading
-import multiprocessing
 import subprocess
+import threading
 from enum import Enum, auto
 from typing import Dict, List
 import warnings
 from speaker import speak
-import queue
 
 from rknn3lite.api import RKNN3Lite
 
@@ -131,29 +129,7 @@ except ImportError:
             pass
 
 
-def set_motor(board, speed_right, speed_left, max_speed=140, motor_command_queue=None):
-    if motor_command_queue is not None:
-        command = {
-            "type": "set_motor",
-            "speed_right": float(speed_right),
-            "speed_left": float(speed_left),
-            "max_speed": int(max_speed),
-        }
-        try:
-            motor_command_queue.put(command, block=False)
-        except queue.Full:
-            try:
-                motor_command_queue.get_nowait()
-            except Exception:
-                pass
-            try:
-                motor_command_queue.put(command, block=False)
-            except Exception as e:
-                print(f"[PetCamera] 电机队列发送失败: {e}")
-        except Exception as e:
-            print(f"[PetCamera] 电机队列发送失败: {e}")
-        return
-
+def set_motor(board, speed_right, speed_left, max_speed=140):
     if board is None:
         return
     try:
@@ -184,37 +160,17 @@ class CameraReader:
         self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         if not self.cap.isOpened():
             raise RuntimeError(f"无法打开摄像头流: {src}")
-        self._lock = threading.Lock()
-        self._stop = threading.Event()
-        self.ret, self.frame = self.cap.read()
-        self.thread = threading.Thread(target=self._update, daemon=True)
-        self.thread.start()
-
-    def _update(self):
-        while not self._stop.is_set():
-            ret, frame = self.cap.read()
-            if ret and frame is not None:
-                with self._lock:
-                    self.ret = ret
-                    self.frame = cv2.flip(frame, 1)
-            else:
-                time.sleep(0.005)
-        if self.cap.isOpened():
-            self.cap.release()
 
     def read(self):
-        with self._lock:
-            if self.frame is not None:
-                return self.ret, self.frame.copy()
-        return False, None
+        ret, frame = self.cap.read()
+        if ret and frame is not None:
+            return ret, cv2.flip(frame, 1)
+        return ret, frame
 
     def isOpened(self):
-        return not self._stop.is_set() and self.cap.isOpened()
+        return self.cap.isOpened()
 
     def release(self):
-        self._stop.set()
-        if self.thread.is_alive():
-            self.thread.join(timeout=2.0)
         if self.cap.isOpened():
             self.cap.release()
 
@@ -570,11 +526,14 @@ def draw_tracking_ui(frame, tracker: MultiBoxTracker, target_pet: str):
     return vis
 
 
-def background_pet_search_task(video_source, model_path, target_pet, tts_mp_q=None, motor_command_queue=None):
+def background_pet_search_task(video_source, model_path, target_pet, tts_mp_q=None, board=None, detector=None):
     import speaker
     speaker.init_mp_queue(tts_mp_q)
-    board = None if motor_command_queue is not None else Board()
-    detector = RKNNDetector(model_path, conf=DET_CONF, core_mask=4)
+    if board is None:
+        board = Board()
+    owns_detector = detector is None
+    if detector is None:
+        detector = RKNNDetector(model_path, conf=DET_CONF, core_mask=4)
     cap = None
     found = False
 
@@ -599,7 +558,7 @@ def background_pet_search_task(video_source, model_path, target_pet, tts_mp_q=No
 
             if dets:
                 found = True
-                set_motor(board, 0.0, 0.0, motor_command_queue=motor_command_queue)
+                set_motor(board, 0.0, 0.0)
                 for det in dets:
                     x1, y1 = int(det.rect.left), int(det.rect.top)
                     x2, y2 = int(det.rect.right), int(det.rect.bottom)
@@ -611,11 +570,12 @@ def background_pet_search_task(video_source, model_path, target_pet, tts_mp_q=No
 
             _show_frame("Pet Search", vis, 1)
             # ! searching speed
-            set_motor(board, speed_right=0.2, speed_left=-0.2, motor_command_queue=motor_command_queue)
+            set_motor(board, speed_right=0.2, speed_left=-0.2)
 
     finally:
-        set_motor(board, 0.0, 0.0, motor_command_queue=motor_command_queue)
-        detector.release()
+        set_motor(board, 0.0, 0.0)
+        if owns_detector and detector is not None:
+            detector.release()
         if found:
             speak(f"这里有一只{pet_name}")
         else:
@@ -630,7 +590,7 @@ def background_pet_search_task(video_source, model_path, target_pet, tts_mp_q=No
         time.sleep(0.2)
 
 
-def background_tracking_task(video_source, model_path, target_pet, pid_file_path, tts_mp_q=None, motor_command_queue=None):
+def background_tracking_task(video_source, model_path, target_pet, pid_file_path, tts_mp_q=None, board=None, detector=None):
     import speaker
     with open(r'/home/test/code/final_0418/llm/pet_tracking_result.txt', 'w') as f:
         f.write(f"failure")
@@ -642,21 +602,23 @@ def background_tracking_task(video_source, model_path, target_pet, pid_file_path
         nonlocal is_running
         is_running = False
 
-    signal.signal(signal.SIGTERM, handle_sigterm)
-    signal.signal(signal.SIGINT, handle_sigterm)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, handle_sigterm)
+        signal.signal(signal.SIGINT, handle_sigterm)
 
     pet_dict = {"cat": "小猫", "dog": "小狗"}
     pet_name = pet_dict.get(target_pet, "宠物")
     target_classes = [target_pet] if target_pet in {"cat", "dog"} else ["cat", "dog"]
     cap = None
-    board = None
-    detector = None
+    owns_detector = detector is None
     video_writer = None
     recording_start_time = None
 
     try:
-        board = None if motor_command_queue is not None else Board()
-        detector = RKNNDetector(model_path, conf=DET_CONF, core_mask=4)
+        if board is None:
+            board = Board()
+        if detector is None:
+            detector = RKNNDetector(model_path, conf=DET_CONF, core_mask=4)
         tracker = MultiBoxTracker()
         cap = CameraReader(video_source)
 
@@ -691,7 +653,7 @@ def background_tracking_task(video_source, model_path, target_pet, pid_file_path
                         raise RuntimeError(f"无法创建视频文件: {TRACK_OUTPUT_VIDEO_PATH}")
                     print(f"已锁定{pet_name}，开始录制视频: {TRACK_OUTPUT_VIDEO_PATH}")
                 else:
-                    set_motor(board, speed_right=TRACK_SEARCH_SPIN_SPEED, speed_left=-TRACK_SEARCH_SPIN_SPEED, motor_command_queue=motor_command_queue)
+                    set_motor(board, speed_right=TRACK_SEARCH_SPIN_SPEED, speed_left=-TRACK_SEARCH_SPIN_SPEED)
                     if now - start_time > TRACK_SEARCH_TIMEOUT_SEC:
                         speak("对不起，我没找到宠物")
                         print("寻找超时，未找到目标宠物，跟踪进程结束")
@@ -703,9 +665,9 @@ def background_tracking_task(video_source, model_path, target_pet, pid_file_path
 
             L, R = tracker.updateTarget()
             if tracker.currentState == TrackerState.IDLE:
-                set_motor(board, speed_right=TRACK_SEARCH_SPIN_SPEED, speed_left=-TRACK_SEARCH_SPIN_SPEED, motor_command_queue=motor_command_queue)
+                set_motor(board, speed_right=TRACK_SEARCH_SPIN_SPEED, speed_left=-TRACK_SEARCH_SPIN_SPEED)
             else:
-                set_motor(board, speed_right=R, speed_left=L, motor_command_queue=motor_command_queue)
+                set_motor(board, speed_right=R, speed_left=L)
 
             if video_writer is not None:
                 video_writer.write(vis)
@@ -724,8 +686,8 @@ def background_tracking_task(video_source, model_path, target_pet, pid_file_path
         print(f"异常: {e}")
 
     finally:
-        set_motor(board, 0.0, 0.0, motor_command_queue=motor_command_queue)
-        if detector is not None:
+        set_motor(board, 0.0, 0.0)
+        if owns_detector and detector is not None:
             detector.release()
         if video_writer is not None:
             try:
@@ -747,58 +709,56 @@ class PetTrackingSystem():
     def __init__(self, model_path=DETECTOR_MODEL):
         self.model_path = model_path
         self.pid_file = "/tmp/pet_tracking_pid.txt"
-        self._process: multiprocessing.Process = None
-        self.motor_command_queue = None
+        self._process = None
+        self.motor_board = None
+        self.detector = None
 
-    def set_motor_command_queue(self, motor_command_queue):
-        self.motor_command_queue = motor_command_queue
+    def set_motor_board(self, board):
+        self.motor_board = board
+
+    def preload(self):
+        self._ensure_detector()
+
+    def _ensure_detector(self):
+        if self.detector is None:
+            self.detector = RKNNDetector(self.model_path, conf=DET_CONF, core_mask=4)
+        return self.detector
 
     def find_pet(self, video_source, target_pet):
-        print(f"启动寻宠进程: {target_pet}")
+        print(f"同步启动寻宠任务: {target_pet}")
         import speaker
-        ctx = multiprocessing.get_context('spawn')
-        if speaker._mp_q is None:
-            speaker.init_mp_queue(ctx.Queue())
-
-        p = ctx.Process(
-            target=background_pet_search_task,
-            args=(video_source, self.model_path, target_pet, speaker._mp_q, self.motor_command_queue),
-            daemon=True
+        background_pet_search_task(
+            video_source,
+            self.model_path,
+            target_pet,
+            speaker._mp_q,
+            self.motor_board,
+            self._ensure_detector(),
         )
-        p.start()
-        p.join()
-        print("寻宠进程已退出")
+        print("寻宠任务已退出")
 
     def start_pet_tracking(self, video_source, target_pet):
-        print(f"启动进程跟踪宠物: {target_pet}")
+        print(f"同步启动宠物跟踪任务: {target_pet}")
         if self._process is not None and self._process.is_alive():
             return
         _safe_remove_pid(self.pid_file)
-
         import speaker
-        ctx = multiprocessing.get_context('spawn')
-        if speaker._mp_q is None:
-            speaker.init_mp_queue(ctx.Queue())
-
-        p = ctx.Process(
-            target=background_tracking_task,
-            args=(video_source, self.model_path, target_pet, self.pid_file, speaker._mp_q, self.motor_command_queue),
-            daemon=True,
+        background_tracking_task(
+            video_source,
+            self.model_path,
+            target_pet,
+            self.pid_file,
+            speaker._mp_q,
+            self.motor_board,
+            self._ensure_detector(),
         )
-        p.start()
-        self._process = p
-        try:
-            with open(self.pid_file, "w") as f:
-                f.write(str(p.pid))
-        except OSError as e:
-            print(f"写入 PID 文件失败: {e}")
 
     def stop_pet_tracking(self):
         try:
             self._terminate_process()
         finally:
             _safe_remove_pid(self.pid_file)
-        set_motor(None, 0.0, 0.0, motor_command_queue=self.motor_command_queue)
+        set_motor(self.motor_board, 0.0, 0.0)
         speak('已经关闭宠物跟踪进程')
 
     def _terminate_process(self):

@@ -263,18 +263,19 @@ def create_video_writer(output_path, frame_width, frame_height, fps=20):
     return writer
 
 
-def background_counting_task(video_source, count_file_path, pid_file_path, video_output_path):
+def background_counting_task(video_source, count_file_path, pid_file_path, video_output_path, det=None):
     is_running = True
 
     def handle_sigterm(signum, frame_obj):
         nonlocal is_running
         is_running = False
 
-    signal.signal(signal.SIGTERM, handle_sigterm)
-    signal.signal(signal.SIGINT, handle_sigterm)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, handle_sigterm)
+        signal.signal(signal.SIGINT, handle_sigterm)
 
     cap = None
-    det = None
+    owns_detector = det is None
     video_writer = None
 
     SESSION_SECONDS = 30
@@ -295,7 +296,8 @@ def background_counting_task(video_source, count_file_path, pid_file_path, video
                 pass
 
     try:
-        det = PushupDet()
+        if det is None:
+            det = PushupDet()
         cap = CameraReader(video_source)
 
         repetition_counter = counter.RepetitionCounter(
@@ -400,7 +402,7 @@ def background_counting_task(video_source, count_file_path, pid_file_path, video
             except Exception as e:
                 print(f"[视频保存异常] {e}")
 
-        if det is not None:
+        if owns_detector and det is not None:
             det.release()
 
         if cap is not None:
@@ -424,6 +426,15 @@ class PushupCountingSystem:
         self.count_file = "/tmp/pushup_count.txt"
         self.video_output_file = "/home/test/code/final_0418/llm/movement_count_2/pushup_record.mp4"
         self._process: multiprocessing.Process = None
+        self.detector = None
+
+    def preload_detector(self):
+        self._ensure_detector()
+
+    def _ensure_detector(self):
+        if self.detector is None:
+            self.detector = PushupDet()
+        return self.detector
 
     def start_counting(self, video_source):
         if self._process is not None and self._process.is_alive():
@@ -442,24 +453,18 @@ class PushupCountingSystem:
             except OSError:
                 pass
 
-        ctx = multiprocessing.get_context('spawn')
-        p = ctx.Process(
-            target=background_counting_task,
-            args=(
-                video_source,
-                self.count_file,
-                self.pid_file,
-                self.video_output_file
-            ),
-            daemon=True,
+        background_counting_task(
+            video_source,
+            self.count_file,
+            self.pid_file,
+            self.video_output_file,
+            self._ensure_detector(),
         )
-
-        p.start()
-        self._process = p
+        return
 
         try:
             with open(self.pid_file, "w") as f:
-                f.write(str(p.pid))
+                f.write("")
         except OSError as e:
             print(f"写入 PID 文件失败: {e}")
 

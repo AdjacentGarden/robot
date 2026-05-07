@@ -180,7 +180,7 @@ class SitupDet:
             self.rknn.release()
 
 
-def background_counting_task(video_source, model_path, count_file_path, pid_file_path, tts_mp_q=None):
+def background_counting_task(video_source, model_path, count_file_path, pid_file_path, tts_mp_q=None, det=None):
     
     # 在全新的 spawn 子进程中重新绑定跨进程队列
     import speaker
@@ -192,13 +192,15 @@ def background_counting_task(video_source, model_path, count_file_path, pid_file
         nonlocal is_running
         is_running = False  
 
-    signal.signal(signal.SIGTERM, handle_sigterm)
-    signal.signal(signal.SIGINT,  handle_sigterm)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, handle_sigterm)
+        signal.signal(signal.SIGINT,  handle_sigterm)
 
     cap = None
-    det = None
+    owns_detector = det is None
     try:
-        det = SitupDet(model_path)
+        if det is None:
+            det = SitupDet(model_path)
         cap = CameraReader(video_source)
 
         situp_count  = 0
@@ -269,7 +271,7 @@ def background_counting_task(video_source, model_path, count_file_path, pid_file
 
     finally:
         # 【修改4】安全释放 NPU 资源，防止底板内存泄漏
-        if det is not None:
+        if owns_detector and det is not None:
             det.release()
             
         if cap is not None:
@@ -292,6 +294,15 @@ class SitupCountingSystem:
         self.pid_file   = "/tmp/situp_pid.txt"
         self.count_file = "/tmp/situp_count.txt"
         self._process: multiprocessing.Process = None
+        self.detector = None
+
+    def preload_detector(self):
+        self._ensure_detector()
+
+    def _ensure_detector(self):
+        if self.detector is None:
+            self.detector = SitupDet(self.model_path)
+        return self.detector
 
     def start_counting(self, video_source):
         # 统一主进程发声调用
@@ -312,16 +323,18 @@ class SitupCountingSystem:
         if speaker._mp_q is None:
              speaker.init_mp_queue(ctx.Queue())
 
-        p = ctx.Process(
-            target=background_counting_task,
-            args=(video_source, self.model_path, self.count_file, self.pid_file, speaker._mp_q),
-            daemon=True,
+        background_counting_task(
+            video_source,
+            self.model_path,
+            self.count_file,
+            self.pid_file,
+            speaker._mp_q,
+            self._ensure_detector(),
         )
-        p.start()
-        self._process = p
+        return
         try:
             with open(self.pid_file, "w") as f:
-                f.write(str(p.pid))
+                f.write("")
         except OSError as e:
             print(f"写入 PID 文件失败: {e}")
             

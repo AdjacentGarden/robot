@@ -126,7 +126,7 @@ def _extract_feature(face_image, model):
     return vector
 
 
-def background_register_face_task(video_source, db_path, model_path, person_name, tts_mp_q=None, result_q=None):
+def background_register_face_task(video_source, db_path, model_path, person_name, tts_mp_q=None, result_q=None, model=None):
     import speaker
 
     speaker.init_mp_queue(tts_mp_q)
@@ -142,9 +142,10 @@ def background_register_face_task(video_source, db_path, model_path, person_name
         cursor.execute("CREATE TABLE IF NOT EXISTS face_vectors (name TEXT PRIMARY KEY, vector BLOB)")
         conn.commit()
 
-        model = InceptionResnetV1(pretrained=None)
-        model.load_state_dict(torch.load(model_path, map_location="cpu"), strict=False)
-        model.eval()
+        if model is None:
+            model = InceptionResnetV1(pretrained=None)
+            model.load_state_dict(torch.load(model_path, map_location="cpu"), strict=False)
+            model.eval()
 
         cap = CameraReader(video_source)
         if window_enabled:
@@ -244,7 +245,7 @@ def background_register_face_task(video_source, db_path, model_path, person_name
             conn.close()
 
 
-def background_recognize_face_task(video_source, db_path, model_path, tts_mp_q=None, result_q=None):
+def background_recognize_face_task(video_source, db_path, model_path, tts_mp_q=None, result_q=None, model=None):
     import speaker
 
     speaker.init_mp_queue(tts_mp_q)
@@ -268,9 +269,10 @@ def background_recognize_face_task(video_source, db_path, model_path, tts_mp_q=N
                 result_q.put({"status": "empty_db"})
             return
 
-        model = InceptionResnetV1(pretrained=None)
-        model.load_state_dict(torch.load(model_path, map_location="cpu"), strict=False)
-        model.eval()
+        if model is None:
+            model = InceptionResnetV1(pretrained=None)
+            model.load_state_dict(torch.load(model_path, map_location="cpu"), strict=False)
+            model.eval()
 
         print("正在调起摄像头...")
         cap = CameraReader(video_source)
@@ -384,8 +386,19 @@ class FaceRecognitionSystem:
     def __init__(self, db_path="face_vectors.db", model_path="20180402-114759-vggface2.pt"):
         self.db_path = db_path
         self.model_path = model_path
+        self.model = None
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"找不到模型权重文件: {model_path}")
+
+    def preload_model(self):
+        self._ensure_model()
+
+    def _ensure_model(self):
+        if self.model is None:
+            self.model = InceptionResnetV1(pretrained=None)
+            self.model.load_state_dict(torch.load(self.model_path, map_location="cpu"), strict=False)
+            self.model.eval()
+        return self.model
 
     def _use_subprocess(self):
         v = str(os.getenv("FACE_CAMERA_USE_SUBPROCESS", "0")).strip().lower()
@@ -419,7 +432,15 @@ class FaceRecognitionSystem:
 
     def _run_register_inline(self, video_source, person_name):
         result_q = queue.Queue()
-        background_register_face_task(video_source, self.db_path, self.model_path, person_name, None, result_q)
+        background_register_face_task(
+            video_source,
+            self.db_path,
+            self.model_path,
+            person_name,
+            None,
+            result_q,
+            self._ensure_model(),
+        )
         result = {"status": "failed"}
         while not result_q.empty():
             result = result_q.get()
@@ -454,7 +475,14 @@ class FaceRecognitionSystem:
 
     def _run_recognize_inline(self, video_source):
         result_q = queue.Queue()
-        background_recognize_face_task(video_source, self.db_path, self.model_path, None, result_q)
+        background_recognize_face_task(
+            video_source,
+            self.db_path,
+            self.model_path,
+            None,
+            result_q,
+            self._ensure_model(),
+        )
         result = {"status": "failed"}
         while not result_q.empty():
             result = result_q.get()

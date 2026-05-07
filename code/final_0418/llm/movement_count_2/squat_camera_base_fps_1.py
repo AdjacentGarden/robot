@@ -192,18 +192,19 @@ def number_to_chinese(num: int) -> str:
         need_zero = False
 
     return result
-def background_counting_task(video_source, count_file_path, pid_file_path, tts_mp_q=None):
+def background_counting_task(video_source, count_file_path, pid_file_path, tts_mp_q=None, det=None):
     is_running = True
 
     def handle_sigterm(signum, frame_obj):
         nonlocal is_running
         is_running = False
 
-    signal.signal(signal.SIGTERM, handle_sigterm)
-    signal.signal(signal.SIGINT, handle_sigterm)
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, handle_sigterm)
+        signal.signal(signal.SIGINT, handle_sigterm)
 
     cap = None
-    det = None
+    owns_detector = det is None
 
     SESSION_SECONDS = 30   # 总时长 30 秒
     IDLE_SECONDS = 10      # 连续 10 秒没有新动作就退出
@@ -222,7 +223,8 @@ def background_counting_task(video_source, count_file_path, pid_file_path, tts_m
                 pass
 
     try:
-        det = SquatDet()
+        if det is None:
+            det = SquatDet()
         cap = CameraReader(video_source)
 
         repetition_counter = counter.RepetitionCounter(
@@ -297,7 +299,7 @@ def background_counting_task(video_source, count_file_path, pid_file_path, tts_m
         print(f"异常: {e}")
 
     finally:
-        if det is not None:
+        if owns_detector and det is not None:
             det.release()
 
         if cap is not None:
@@ -315,6 +317,15 @@ class SquatCountingSystem:
         self.pid_file   = "/tmp/squat_pid.txt"
         self.count_file = "/tmp/squat_count.txt"
         self._process: multiprocessing.Process = None
+        self.detector = None
+
+    def preload_detector(self):
+        self._ensure_detector()
+
+    def _ensure_detector(self):
+        if self.detector is None:
+            self.detector = SquatDet()
+        return self.detector
 
     def start_counting(self, video_source):
         if self._process is not None and self._process.is_alive():
@@ -327,18 +338,12 @@ class SquatCountingSystem:
 
         _safe_remove_pid(self.pid_file)
 
-        ctx = multiprocessing.get_context('spawn')
-        p = ctx.Process(
-            target=background_counting_task,
-            args=(video_source, self.count_file, self.pid_file, None),
-            daemon=True,
-        )
-        p.start()
-        self._process = p
+        background_counting_task(video_source, self.count_file, self.pid_file, None, self._ensure_detector())
+        return
 
         try:
             with open(self.pid_file, "w") as f:
-                f.write(str(p.pid))
+                f.write("")
         except OSError as e:
             print(f"写入 PID 文件失败: {e}")
 
