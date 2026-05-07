@@ -1,0 +1,49 @@
+# Custom Navigator parameters — replaces Nav2 stack
+# Pure-pursuit path follower with distance-weighted A* and costmap safety
+
+custom_navigator:
+  ros__parameters:
+    # ────────── Robot ──────────
+    robot_radius: 0.15          # Safety clearance from obstacles (m)
+    max_vel_x: 0.22             # Max forward velocity (m/s)
+    min_vel_x: -0.10            # Max reverse velocity (m/s)
+    max_vel_theta: 0.7          # Max angular velocity (rad/s)
+    max_accel_x: 0.18           # Forward acceleration limit (m/s^2)
+    max_decel_x: 0.28           # Forward deceleration limit (m/s^2)
+    max_accel_theta: 1.0        # Angular acceleration limit (rad/s^2)
+    max_lateral_accel: 0.10     # Reduce speed on tight turns to avoid slipping
+
+    # ────────── Local Planner ──────────
+    control_freq: 15.0          # Control loop frequency (Hz)
+    goal_tolerance: 0.25        # Distance to consider goal reached (m)
+    lookahead_dist: 0.45        # Lookahead distance on global path (m)
+    safety_horizon: 0.5         # Forward collision check time (s)
+    allow_in_place_rotation: false  # Ackermann robots should keep this false
+    min_turning_speed: 0.05     # Minimum forward speed when steering (m/s)
+    sharp_turn_angle: 1.05      # Slow down strongly when heading error > 60 deg
+    very_sharp_turn_angle: 1.57 # Crawl when heading error > 90 deg
+    sharp_turn_speed: 0.06      # Max speed during sharp turns (m/s)
+    very_sharp_turn_speed: 0.03 # Max speed during >90 deg turns (m/s)
+
+    # ────────── A* Global Planner ──────────
+    astar_limit: 100000         # Max cells to explore before giving up
+    inflation_mult: 1.5         # Hard inflation = mult × robot_radius
+    proximity_weight: 3.0       # Cost weight for being near walls (higher = more centered)
+    goal_search_radius: 0.8     # Search a nearby reachable goal if target cell is bad
+    goal_search_step: 0.1       # Search step for nearby reachable goal (m)
+
+    # ────────── Recovery ──────────
+    stuck_timeout: 3.5          # Seconds without progress before recovery (s)
+    stuck_radius: 0.12          # Minimum movement to count as progress (m)
+    max_recoveries: 5           # Max recovery attempts before aborting goal
+    backup_vel: -0.10           # Reverse velocity during backup (m/s)
+    backup_time: 0.8            # Duration of backup (s)
+    spin_vel: 0.6               # Angular velocity during recovery curve / spin (rad/s)
+    spin_duration: 1.5          # Duration of recovery curve / spin (s)
+
+    # ────────── Navigation ──────────
+    goal_timeout: 90.0          # Abort goal after this many seconds
+    replan_interval: 5.0        # Recompute global A* path every N seconds
+
+    # ────────── Topics ──────────
+    cmd_vel_topic: "/cmd_vel"   # Velocity command output topic

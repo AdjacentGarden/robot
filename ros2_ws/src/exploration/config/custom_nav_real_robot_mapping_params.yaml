@@ -1,0 +1,92 @@
+# Real-robot custom navigator parameters (mapping/exploration profile)
+# Keep steering commands conservative because the base responds much slower
+# than the simulator and large angular commands make it diverge from the path.
+
+/**:
+  ros__parameters:
+    # ────────── Robot ──────────
+    robot_radius: 0.24
+    max_vel_x: 0.280
+    min_vel_x: -0.08
+    max_vel_theta: 1.05
+    max_accel_x: 0.14
+    max_decel_x: 0.24
+    max_accel_theta: 2.20
+    max_lateral_accel: 0.08
+    cmd_smoothing_alpha: 0.18
+    forward_angular_trim: 0.0
+    min_cmd_linear_speed: 0.08  # Minimum |linear.x| to overcome static friction on real base
+    min_cmd_angular_speed: 0.18 # Minimum |angular.z| to overcome static friction on real base
+
+    # ────────── Local Planner ──────────
+    control_freq: 20.0
+    goal_tolerance: 0.40
+    lookahead_dist: 0.28
+    safety_horizon: 0.5
+    heading_kp: 1.25
+    steering_deadband_angle: 0.05
+    allow_in_place_rotation: true
+    use_ackermann_model: false
+    wheelbase: 0.244
+    max_steer_angle: 0.7820
+    enable_fallback_turn_search: true
+    min_turning_speed: 0.06
+    fallback_turn_speed: 0.05
+    turning_hysteresis_angle: 0.00
+    sharp_turn_angle: 1.05
+    very_sharp_turn_angle: 1.57
+    sharp_turn_speed: 0.08
+    very_sharp_turn_speed: 0.04
+    large_heading_deg: 60.0
+    behind_heading_deg: 120.0
+    large_heading_release_deg: 18.0
+    behind_heading_release_deg: 30.0
+    moderate_lateral_error: 0.16
+    recovery_lateral_error: 0.20
+    fallback_cycles_before_active: 4
+    state_min_hold_time: 0.35
+    large_heading_recovery_angular: 1.00
+    behind_heading_recovery_angular: 1.05
+    large_heading_recovery_linear: 0.00
+    fallback_in_place_angular: 0.90
+    fallback_hold_cycles: 6
+    fallback_recovery_guard_time: 1.0
+
+    # ────────── A* Global Planner ──────────
+    astar_limit: 100000
+    inflation_mult: 1.5
+    proximity_weight: 3.0
+    goal_search_radius: 0.8
+    goal_search_step: 0.1
+
+    # ────────── Recovery ──────────
+    stuck_timeout: 4.20
+    stuck_radius: 0.040
+    stuck_heading_progress_deg: 10.0
+    enable_stuck_recovery: true
+    max_recoveries: 7
+    backup_vel: -0.14
+    backup_time: 0.8
+    spin_vel: 0.80
+    spin_duration: 0.6
+    recovery_curve_speed: 0.08
+    recovery_curve_angular: 0.30
+    recovery_curve_duration: 0.5
+    enable_recovery_head_turn: true
+    recovery_head_turn_angle_deg: 75.0
+    recovery_head_turn_speed: 0.95
+    recovery_head_turn_timeout: 8.0
+    recovery_head_turn_sector_deg: 70.0
+    recovery_head_turn_min_valid_points: 8
+    recovery_head_turn_min_eval_range: 0.12
+    recovery_head_turn_max_eval_range: 1.50
+    recovery_head_turn_bias: 0.05
+
+    # ────────── Navigation ──────────
+    goal_timeout: 90.0
+    replan_interval: 0.8
+    fallback_replan_count: 4
+    debug_tracking: true
+
+    # ────────── Topics ──────────
+    cmd_vel_topic: "/cmd_vel"

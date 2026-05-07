@@ -1,0 +1,62 @@
+# Custom Navigator parameters — replaces Nav2 stack
+# Pure-pursuit path follower with distance-weighted A* and costmap safety
+
+custom_navigator:
+  ros__parameters:
+    # ────────── Robot ──────────
+    robot_radius: 0.18          # Safety clearance from obstacles (m)
+    max_vel_x: 0.18             # Max forward velocity (m/s)
+    min_vel_x: -0.15            # Max reverse velocity (m/s)
+    max_vel_theta: 1.2          # Max angular velocity (rad/s)
+    max_accel_x: 0.27           # Forward acceleration limit (m/s^2)
+    max_decel_x: 0.42           # Forward deceleration limit (m/s^2)
+    max_accel_theta: 1.5        # Angular acceleration limit (rad/s^2)
+    max_lateral_accel: 0.10     # Reduce speed on tight turns to avoid slipping
+    cmd_smoothing_alpha: 0.35   # Extra output smoothing, similar to Nav2 velocity smoother
+    forward_angular_trim: 0.0   # Constant steering trim while moving forward; use to offset fixed drift
+
+    # ────────── Local Planner ──────────
+    control_freq: 15.0          # Control loop frequency (Hz)
+    goal_tolerance: 0.25        # Distance to consider goal reached (m)
+    lookahead_dist: 0.45        # Lookahead distance on global path (m)
+    safety_horizon: 0.5         # Forward collision check time (s)
+    heading_kp: 1.2             # Heading-to-steering gain
+    steering_deadband_angle: 0.08 # Keep steering centered for tiny heading errors
+    allow_in_place_rotation: false  # Ackermann robots should keep this false
+    enable_fallback_turn_search: false  # Stop instead of issuing avoidance turn-search commands
+    min_turning_speed: 0.15     # Minimum forward speed when steering (m/s)
+    fallback_turn_speed: 0.18   # Forward speed used by fallback turning search (m/s)
+    turning_hysteresis_angle: 0.35 # Keep turn direction stable when target sits near +/-pi
+    sharp_turn_angle: 1.05      # Slow down strongly when heading error > 60 deg
+    very_sharp_turn_angle: 1.57 # Crawl when heading error > 90 deg
+    sharp_turn_speed: 0.15      # Max speed during sharp turns (m/s)
+    very_sharp_turn_speed: 0.12 # Max speed during >90 deg turns (m/s)
+
+    # ────────── A* Global Planner ──────────
+    astar_limit: 100000         # Max cells to explore before giving up
+    inflation_mult: 1.5         # Hard inflation = mult × robot_radius
+    proximity_weight: 3.0       # Cost weight for being near walls (higher = more centered)
+    goal_search_radius: 0.8     # Search a nearby reachable goal if target cell is bad
+    goal_search_step: 0.1       # Search step for nearby reachable goal (m)
+
+    # ────────── Recovery ──────────
+    stuck_timeout: 3.5          # Seconds without progress before recovery (s)
+    stuck_radius: 0.12          # Minimum movement to count as progress (m)
+    enable_stuck_recovery: false # Abort and stop instead of backup/curve recovery
+    max_recoveries: 5           # Max recovery attempts before aborting goal
+    backup_vel: -0.15           # Reverse velocity during backup (m/s)
+    backup_time: 0.5            # Duration of backup (s)
+    spin_vel: 0.525             # Angular velocity during optional final spin (rad/s)
+    spin_duration: 0.8          # Duration of optional final spin (s)
+    recovery_curve_speed: 0.18  # Forward speed during curved recovery (m/s)
+    recovery_curve_angular: 0.30 # Angular speed during curved recovery (rad/s)
+    recovery_curve_duration: 1.0 # Duration of curved recovery (s)
+
+    # ────────── Navigation ──────────
+    goal_timeout: 90.0          # Abort goal after this many seconds
+    replan_interval: 5.0        # Recompute global A* path every N seconds
+    fallback_replan_count: 6    # Force global replan after this many fallback cycles
+    debug_tracking: true        # Log controller mode / heading error / yaw tracking
+
+    # ────────── Topics ──────────
+    cmd_vel_topic: "/cmd_vel"   # Velocity command output topic

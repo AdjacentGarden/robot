@@ -1,0 +1,222 @@
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/client.py", line 116, in call_async
+    with self.handle:
+rclpy._rclpy_pybind11.InvalidHandle: cannot use Destroyable because destruction was requested
+Future exception was never retrieved
+future: <Future finished exception=InvalidHandle('cannot use Destroyable because destruction was requested')>
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "/opt/ros/humble/lib/python3.10/site-packages/launch_ros/actions/load_composable_nodes.py", line 197, in _load_in_sequence
+    self._load_node(next_load_node_request, context)
+  File "/opt/ros/humble/lib/python3.10/site-packages/launch_ros/actions/load_composable_nodes.py", line 119, in _load_node
+    while not self.__rclpy_load_node_client.wait_for_service(timeout_sec=1.0):
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/client.py", line 176, in wait_for_service
+    while self.context.ok() and not self.service_is_ready() and timeout_sec > 0.0:
+  File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/client.py", line 159, in service_is_ready
+    with self.handle:
+rclpy._rclpy_pybind11.InvalidHandle: cannot use Destroyable because destruction was requested
+[INFO] [component_container_isolated-15]: sending signal 'SIGINT' to process[component_container_isolated-15]
+[INFO] [sync_slam_toolbox_node-14]: sending signal 'SIGINT' to process[sync_slam_toolbox_node-14]
+[INFO] [init_pose-13]: sending signal 'SIGINT' to process[init_pose-13]
+[INFO] [joystick_control-12]: sending signal 'SIGINT' to process[joystick_control-12]
+[INFO] [scan_to_scan_filter_chain-11]: sending signal 'SIGINT' to process[scan_to_scan_filter_chain-11]
+[INFO] [ydlidar_ros2_driver_node-10]: sending signal 'SIGINT' to process[ydlidar_ros2_driver_node-10]
+[INFO] [servo_controller-8]: sending signal 'SIGINT' to process[servo_controller-8]
+[INFO] [ekf_node-7]: sending signal 'SIGINT' to process[ekf_node-7]
+[INFO] [odom_publisher-6]: sending signal 'SIGINT' to process[odom_publisher-6]
+[INFO] [ros_robot_controller-5]: sending signal 'SIGINT' to process[ros_robot_controller-5]
+[INFO] [robot_state_publisher-4]: sending signal 'SIGINT' to process[robot_state_publisher-4]
+[INFO] [joint_state_publisher-3]: sending signal 'SIGINT' to process[joint_state_publisher-3]
+[INFO] [imu_filter_madgwick_node-2]: sending signal 'SIGINT' to process[imu_filter_madgwick_node-2]
+[INFO] [apply_calib-1]: sending signal 'SIGINT' to process[apply_calib-1]
+[component_container_isolated-15] [INFO] [1772550181.495814088] [controller_server]: 
+[component_container_isolated-15] 	controller_server lifecycle node launched. 
+[component_container_isolated-15] 	Waiting on external lifecycle transitions to activate
+[component_container_isolated-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[apply_calib-1] [INFO] [1772550181.783904168] [imu_calib]: Gyro calibration complete! (bias = [-0.051, -0.055, -0.003])
+[imu_filter_madgwick_node-2] [INFO] [1772550181.807816008] [imu_filter]: First IMU message received.
+[sync_slam_toolbox_node-14] [INFO] [1772550181.928386344] [slam_toolbox]: Message Filter dropping message: frame 'lidar_frame' at time 1772550185.295 for reason 'the timestamp on the message is earlier than all the data in the transform cache'
+[component_container_isolated-15] [INFO] [1772550182.021450248] [controller_server]: Creating controller server
+[component_container_isolated-15] [INFO] [1772550182.531902792] [local_costmap.local_costmap]: 
+[component_container_isolated-15] 	local_costmap lifecycle node launched. 
+[component_container_isolated-15] 	Waiting on external lifecycle transitions to activate
+[component_container_isolated-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[component_container_isolated-15] [INFO] [1772550182.647226120] [local_costmap.local_costmap]: Creating Costmap
+[component_container_isolated-15] Failed to publish log message to rosout: cannot publish data, at ./src/rmw_publish.cpp:62, at ./src/rcl/publisher.c:250
+[component_container_isolated-15] [INFO] [1772550182.745439112] [nav2_container]: Load Library: /opt/ros/humble/lib/libmap_server_core.so
+[component_container_isolated-15] [INFO] [1772550183.499281032] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_map_server::CostmapFilterInfoServer>
+[component_container_isolated-15] [INFO] [1772550183.499550248] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_map_server::MapSaver>
+[component_container_isolated-15] [INFO] [1772550183.499616968] [nav2_container]: Found class: rclcpp_components::NodeFactoryTemplate<nav2_map_server::MapServer>
+[component_container_isolated-15] [INFO] [1772550183.499636552] [nav2_container]: Instantiate class: rclcpp_components::NodeFactoryTemplate<nav2_map_server::MapServer>
+[joystick_control-12] [INFO] [1772550182.113085192] [joystick_control]: 0.2
+[ydlidar_ros2_driver_node-10] [2026-03-03 23:03:02][error] Check Sum 0x72F6 != 0x768C
+[sync_slam_toolbox_node-14] [INFO] [1772550183.592911016] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[component_container_isolated-15] [INFO] [1772550183.557063880] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[component_container_isolated-15] [INFO] [1772550183.617910280] [controller_server]: Running Nav2 LifecycleNode rcl preshutdown (controller_server)
+[component_container_isolated-15] [INFO] [1772550183.618181384] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[servo_controller-8] [INFO] [1772550183.630431496] [controller_manager]: start
+[init_pose-13] Traceback (most recent call last):
+[init_pose-13]   File "/home/ubuntu/ros2_ws/install/controller/lib/controller/init_pose", line 33, in <module>
+[INFO] [scan_to_scan_filter_chain-11]: process has finished cleanly [pid 18823]
+[init_pose-13]     sys.exit(load_entry_point('controller', 'console_scripts', 'init_pose')())
+[init_pose-13]   File "/home/ubuntu/ros2_ws/build/controller/controller/init_pose.py", line 53, in main
+[init_pose-13]     node = InitPose('init_pose')
+[init_pose-13]   File "/home/ubuntu/ros2_ws/build/controller/controller/init_pose.py", line 46, in __init__
+[init_pose-13]     self.get_logger().info('\033[1;32m%s\033[0m' % 'start')
+[init_pose-13]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/impl/rcutils_logger.py", line 329, in info
+[init_pose-13]     return self.log(message, LoggingSeverity.INFO, **kwargs)
+[init_pose-13]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/impl/rcutils_logger.py", line 287, in log
+[init_pose-13]     caller_id = CallerId()
+[init_pose-13]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/impl/rcutils_logger.py", line 59, in __new__
+[init_pose-13]     frame = _find_caller(inspect.currentframe())
+[init_pose-13]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/impl/rcutils_logger.py", line 47, in _find_caller
+[init_pose-13]     file_path = os.path.realpath(inspect.getframeinfo(frame).filename)
+[init_pose-13]   File "/usr/lib/python3.10/inspect.py", line 1624, in getframeinfo
+[init_pose-13]     lines, lnum = findsource(frame)
+[init_pose-13]   File "/usr/lib/python3.10/inspect.py", line 952, in findsource
+[init_pose-13]     module = getmodule(object, file)
+[init_pose-13]   File "/usr/lib/python3.10/inspect.py", line 875, in getmodule
+[init_pose-13]     f = getabsfile(module)
+[init_pose-13]   File "/usr/lib/python3.10/inspect.py", line 844, in getabsfile
+[init_pose-13]     _filename = getsourcefile(object) or getfile(object)
+[init_pose-13]   File "/usr/lib/python3.10/inspect.py", line 826, in getsourcefile
+[init_pose-13]     if os.path.exists(filename):
+[init_pose-13]   File "/usr/lib/python3.10/genericpath.py", line 19, in exists
+[init_pose-13]     os.stat(path)
+[init_pose-13] KeyboardInterrupt
+[scan_to_scan_filter_chain-11] [INFO] [1772550183.731644776] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ydlidar_ros2_driver_node-10] [2026-03-03 23:03:03][error] Check Sum 0x7208 != 0x7194
+[joystick_control-12] Traceback (most recent call last):
+[joystick_control-12]   File "/home/ubuntu/ros2_ws/install/peripherals/lib/peripherals/joystick_control", line 33, in <module>
+[joystick_control-12]     sys.exit(load_entry_point('peripherals', 'console_scripts', 'joystick_control')())
+[joystick_control-12]   File "/home/ubuntu/ros2_ws/build/peripherals/peripherals/joystick_control.py", line 166, in main
+[joystick_control-12]     node = JoystickController('joystick_control')
+[joystick_control-12]   File "/home/ubuntu/ros2_ws/build/peripherals/peripherals/joystick_control.py", line 41, in __init__
+[joystick_control-12]     self.mecanum_pub = self.create_publisher(Twist, 'controller/cmd_vel', 1)
+[joystick_control-12]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/node.py", line 1293, in create_publisher
+[joystick_control-12]     publisher_object = _rclpy.Publisher(
+[joystick_control-12] KeyboardInterrupt
+[ydlidar_ros2_driver_node-10] [INFO] [1772550184.012057864] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[servo_controller-8] Traceback (most recent call last):
+[servo_controller-8]   File "/home/ubuntu/ros2_ws/install/servo_controller/lib/servo_controller/servo_controller", line 33, in <module>
+[servo_controller-8]     sys.exit(load_entry_point('servo-controller', 'console_scripts', 'servo_controller')())
+[servo_controller-8]   File "/home/ubuntu/ros2_ws/build/servo_controller/servo_controller/controller_manager.py", line 117, in main
+[servo_controller-8]     rclpy.spin(node)  # 循环等待ROS2退出
+[servo_controller-8]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 222, in spin
+[servo_controller-8]     executor.spin_once()
+[servo_controller-8]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 739, in spin_once
+[servo_controller-8]     self._spin_once_impl(timeout_sec)
+[servo_controller-8]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 728, in _spin_once_impl
+[servo_controller-8]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[servo_controller-8]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 711, in wait_for_ready_callbacks
+[servo_controller-8]     return next(self._cb_iter)
+[servo_controller-8]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 608, in _wait_for_ready_callbacks
+[servo_controller-8]     wait_set.wait(timeout_nsec)
+[servo_controller-8] KeyboardInterrupt
+[ekf_node-7] [INFO] [1772550184.048073960] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[robot_state_publisher-4] [INFO] [1772550184.106271432] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ydlidar_ros2_driver_node-10] [INFO] [1772550184.118663752] [ydlidar_ros2_driver_node]: [YDLIDAR INFO] Now YDLIDAR is stopping .......
+[INFO] [robot_state_publisher-4]: process has finished cleanly [pid 18805]
+[ros_robot_controller-5] Exception in thread Thread-2 (pub_callback):
+[ros_robot_controller-5] Traceback (most recent call last):
+[ros_robot_controller-5]   File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+[ros_robot_controller-5]     self.run()
+[ros_robot_controller-5]   File "/usr/lib/python3.10/threading.py", line 953, in run
+[ros_robot_controller-5]     self._target(*self._args, **self._kwargs)
+[ros_robot_controller-5]   File "/home/ubuntu/ros2_ws/build/ros_robot_controller/ros_robot_controller/ros_robot_controller_node.py", line 65, in pub_callback
+[ros_robot_controller-5]     self.pub_imu_data(self.imu_pub)
+[ros_robot_controller-5]   File "/home/ubuntu/ros2_ws/build/ros_robot_controller/ros_robot_controller/ros_robot_controller_node.py", line 266, in pub_imu_data
+[ros_robot_controller-5]     pub.publish(msg)
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/publisher.py", line 68, in publish
+[ros_robot_controller-5]     with self.handle:
+[ros_robot_controller-5] rclpy._rclpy_pybind11.InvalidHandle: cannot use Destroyable because destruction was requested
+[imu_filter_madgwick_node-2] [INFO] [1772550184.270982632] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[apply_calib-1] [INFO] [1772550184.531120456] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ydlidar_ros2_driver_node-10] [YDLIDAR DEBUG] Thread [0x47FF7840] ready to cancel[0]
+[ydlidar_ros2_driver_node-10] [YDLIDAR DEBUG] Thread [0x47FF7840] ready to cancel[0] time[1]
+[ydlidar_ros2_driver_node-10] [YDLIDAR] Thread [0x47FF7840] has been canceled
+[ydlidar_ros2_driver_node-10] [YDLIDAR] Now lidar scanning has stopped!
+[ros_robot_controller-5] 校验失败
+[ros_robot_controller-5] 校验失败
+[ros_robot_controller-5] shutdown finish
+[INFO] [apply_calib-1]: process has finished cleanly [pid 18799]
+[ERROR] [component_container_isolated-15]: process has died [pid 19163, exit code -11, cmd '/opt/ros/humble/lib/rclcpp_components/component_container_isolated --ros-args --log-level info --ros-args -r __node:=nav2_container --params-file /home/ubuntu/ros2_ws/src/navigation/config/nav2_params.yaml --params-file /tmp/launch_params_g9ygzt7l -r /tf:=tf -r /tf_static:=tf_static'].
+[INFO] [ekf_node-7]: process has finished cleanly [pid 18811]
+[INFO] [sync_slam_toolbox_node-14]: process has finished cleanly [pid 18941]
+[INFO] [imu_filter_madgwick_node-2]: process has finished cleanly [pid 18801]
+[ros_robot_controller-5] Traceback (most recent call last):
+[ros_robot_controller-5]   File "/home/ubuntu/ros2_ws/build/ros_robot_controller/ros_robot_controller/ros_robot_controller_node.py", line 271, in main
+[ros_robot_controller-5]     rclpy.spin(node)
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 222, in spin
+[ros_robot_controller-5]     executor.spin_once()
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 739, in spin_once
+[ros_robot_controller-5]     self._spin_once_impl(timeout_sec)
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 728, in _spin_once_impl
+[ros_robot_controller-5]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 711, in wait_for_ready_callbacks
+[ros_robot_controller-5]     return next(self._cb_iter)
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 608, in _wait_for_ready_callbacks
+[ros_robot_controller-5]     wait_set.wait(timeout_nsec)
+[ros_robot_controller-5] KeyboardInterrupt
+[ros_robot_controller-5] 
+[ros_robot_controller-5] During handling of the above exception, another exception occurred:
+[ros_robot_controller-5] 
+[ros_robot_controller-5] Traceback (most recent call last):
+[ros_robot_controller-5]   File "/home/ubuntu/ros2_ws/install/ros_robot_controller/lib/ros_robot_controller/ros_robot_controller", line 33, in <module>
+[ros_robot_controller-5]     sys.exit(load_entry_point('ros-robot-controller', 'console_scripts', 'ros_robot_controller')())
+[ros_robot_controller-5]   File "/home/ubuntu/ros2_ws/build/ros_robot_controller/ros_robot_controller/ros_robot_controller_node.py", line 275, in main
+[ros_robot_controller-5]     rclpy.shutdown()
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 126, in shutdown
+[ros_robot_controller-5]     _shutdown(context=context)
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/utilities.py", line 58, in shutdown
+[ros_robot_controller-5]     return context.shutdown()
+[ros_robot_controller-5]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/context.py", line 102, in shutdown
+[ros_robot_controller-5]     self.__context.shutdown()
+[ros_robot_controller-5] rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:241
+[INFO] [ydlidar_ros2_driver_node-10]: process has finished cleanly [pid 18820]
+[ERROR] [init_pose-13]: process has died [pid 18831, exit code -2, cmd '/home/ubuntu/ros2_ws/install/controller/lib/controller/init_pose --ros-args -r __node:=init_pose -r __ns:=/ --params-file /home/ubuntu/ros2_ws/src/driver/controller/config/init_pose.yaml'].
+[ERROR] [servo_controller-8]: process has died [pid 18814, exit code -2, cmd '/home/ubuntu/ros2_ws/install/servo_controller/lib/servo_controller/servo_controller --ros-args -r __ns:=/ --params-file /home/ubuntu/ros2_ws/src/driver/servo_controller/config/servo_controller.yaml --params-file /tmp/launch_params_nv44x7ue'].
+[INFO] [joint_state_publisher-3]: process has finished cleanly [pid 18803]
+[ERROR] [joystick_control-12]: process has died [pid 18827, exit code -2, cmd '/home/ubuntu/ros2_ws/install/peripherals/lib/peripherals/joystick_control --ros-args -r __node:=joystick_control -r __ns:=/ --params-file /tmp/launch_params_0aasuco5 -r controller/cmd_vel:=/controller/cmd_vel'].
+[ERROR] [ros_robot_controller-5]: process has died [pid 18807, exit code 1, cmd '/home/ubuntu/ros2_ws/install/ros_robot_controller/lib/ros_robot_controller/ros_robot_controller --ros-args -r __ns:=/ --params-file /tmp/launch_params_piggtr8u'].
+[ERROR] [odom_publisher-6]: process[odom_publisher-6] failed to terminate '5' seconds after receiving 'SIGINT', escalating to 'SIGTERM'
+[INFO] [odom_publisher-6]: sending signal 'SIGTERM' to process[odom_publisher-6]
+[odom_publisher-6] [INFO] [1772550188.548124936] [odom_publisher]: shutdown
+[odom_publisher-6] Failed to publish log message to rosout: publisher's context is invalid, at ./src/rcl/publisher.c:389
+[odom_publisher-6] Exception in thread Thread-1 (cal_odom_fun):
+[odom_publisher-6] Traceback (most recent call last):
+[odom_publisher-6]   File "/usr/lib/python3.10/threading.py", line 1016, in _bootstrap_inner
+[odom_publisher-6]     self.run()
+[odom_publisher-6]   File "/usr/lib/python3.10/threading.py", line 953, in run
+[odom_publisher-6]     self._target(*self._args, **self._kwargs)
+[odom_publisher-6]   File "/home/ubuntu/ros2_ws/build/controller/controller/odom_publisher_node.py", line 273, in cal_odom_fun
+[odom_publisher-6]     self.odom_pub.publish(self.odom)
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/publisher.py", line 70, in publish
+[odom_publisher-6]     self.__publisher.publish(msg)
+[odom_publisher-6] rclpy._rclpy_pybind11.RCLError: Failed to publish: publisher's context is invalid, at ./src/rcl/publisher.c:389
+[odom_publisher-6] Traceback (most recent call last):
+[odom_publisher-6]   File "/home/ubuntu/ros2_ws/install/controller/lib/controller/odom_publisher", line 33, in <module>
+[odom_publisher-6]     sys.exit(load_entry_point('controller', 'console_scripts', 'odom_publisher')())
+[odom_publisher-6]   File "/home/ubuntu/ros2_ws/build/controller/controller/odom_publisher_node.py", line 279, in main
+[odom_publisher-6]     rclpy.spin(node)  # 循环等待ROS2退出
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 222, in spin
+[odom_publisher-6]     executor.spin_once()
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 739, in spin_once
+[odom_publisher-6]     self._spin_once_impl(timeout_sec)
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 728, in _spin_once_impl
+[odom_publisher-6]     handler, entity, node = self.wait_for_ready_callbacks(timeout_sec=timeout_sec)
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 711, in wait_for_ready_callbacks
+[odom_publisher-6]     return next(self._cb_iter)
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/executors.py", line 608, in _wait_for_ready_callbacks
+[odom_publisher-6]     wait_set.wait(timeout_nsec)
+[odom_publisher-6]   File "/home/ubuntu/ros2_ws/build/controller/controller/odom_publisher_node.py", line 140, in shutdown
+[odom_publisher-6]     rclpy.shutdown()
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/__init__.py", line 126, in shutdown
+[odom_publisher-6]     _shutdown(context=context)
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/utilities.py", line 58, in shutdown
+[odom_publisher-6]     return context.shutdown()
+[odom_publisher-6]   File "/opt/ros/humble/local/lib/python3.10/dist-packages/rclpy/context.py", line 102, in shutdown
+[odom_publisher-6]     self.__context.shutdown()
+[odom_publisher-6] rclpy._rclpy_pybind11.RCLError: failed to shutdown: rcl_shutdown already called on the given context, at ./src/rcl/init.c:241
+[ERROR] [odom_publisher-6]: process has died [pid 18809, exit code 1, cmd '/home/ubuntu/ros2_ws/install/controller/lib/controller/odom_publisher --ros-args -r __node:=odom_publisher -r __ns:=/ --params-file /home/ubuntu/ros2_ws/src/driver/controller/config/calibrate_params.yaml --params-file /tmp/launch_params_6jlcgp47'].
+bash-5

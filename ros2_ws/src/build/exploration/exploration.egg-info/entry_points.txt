@@ -1,0 +1,9 @@
+[console_scripts]
+amcl_auto_relocalizer = exploration.amcl_auto_relocalizer:main
+auto_initial_pose_estimator = exploration.auto_initial_pose_estimator:main
+custom_navigator = exploration.custom_navigator:main
+diagnostic_recorder = exploration.diagnostic_recorder:main
+frontier_explorer = exploration.frontier_explorer:main
+map_goal_bridge = exploration.map_goal_bridge:main
+sim_environment = exploration.sim_environment:main
+

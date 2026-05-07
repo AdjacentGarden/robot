@@ -1,0 +1,24 @@
+# Explore Lite 配置文件
+explore:
+  ros__parameters:
+    # 边界选择参数
+    max_frontier_size: 100              # 最大前沿点数量
+    min_frontier_size: 5                # 最小前沿点数量，太小会造成频繁目标切换
+    potential_scale: 1e-3               # 势函数缩放因子，越大越优先选择新的边界
+    gain_scale: 1.0                     # 收益缩放因子
+    
+    # 距离范围限制
+    min_dist_potential_range: 0.5       # 最小距离范围（米）
+    max_dist_potential_range: 20.0      # 最大距离范围（米）
+    
+    # 速度限制
+    min_yaaw_velocity: 0.1              # 最小角速度（rad/s）
+    max_yaaw_velocity: 1.0              # 最大角速度（rad/s）
+    min_linear_velocity: 0.1            # 最小线速度（m/s）
+    max_linear_velocity: 0.5            # 最大线速度（m/s）
+    
+    # 其他参数
+    visualize: true                     # 是否在RViz中可视化
+    planner_frequency: 1.0              # 规划频率（Hz）
+    progress_timeout: 30.0              # 进度超时时间（秒），超时会寻找新目标
+    visualize_potential: false          # 可视化势函数（可能耗CPU）

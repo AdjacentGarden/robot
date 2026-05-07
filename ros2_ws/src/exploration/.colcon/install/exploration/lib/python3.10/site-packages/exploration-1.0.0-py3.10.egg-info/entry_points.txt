@@ -1,0 +1,6 @@
+[console_scripts]
+custom_navigator = exploration.custom_navigator:main
+frontier_explorer = exploration.frontier_explorer:main
+map_goal_bridge = exploration.map_goal_bridge:main
+sim_environment = exploration.sim_environment:main
+

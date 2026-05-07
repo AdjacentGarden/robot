@@ -1,0 +1,66 @@
+# Real-robot custom navigator parameters
+# Keep steering commands conservative because the base responds much slower
+# than the simulator and large angular commands make it diverge from the path.
+
+custom_navigator:
+  ros__parameters:
+    # ────────── Robot ──────────
+    robot_radius: 0.15
+    max_vel_x: 0.30
+    min_vel_x: -0.08
+    max_vel_theta: 1.00
+    max_accel_x: 0.15
+    max_decel_x: 0.24
+    max_accel_theta: 0.45
+    max_lateral_accel: 0.08
+    cmd_smoothing_alpha: 0.18
+    forward_angular_trim: 0.0
+
+    # ────────── Local Planner ──────────
+    control_freq: 15.0
+    goal_tolerance: 0.40
+    lookahead_dist: 0.55
+    safety_horizon: 0.5
+    heading_kp: 0.40
+    steering_deadband_angle: 0.15
+    allow_in_place_rotation: true
+    use_ackermann_model: false
+    wheelbase: 0.244
+    max_steer_angle: 0.8727
+    enable_fallback_turn_search: false
+    min_turning_speed: 0.12
+    fallback_turn_speed: 0.10
+    turning_hysteresis_angle: 0.35
+    sharp_turn_angle: 1.10
+    very_sharp_turn_angle: 1.70
+    sharp_turn_speed: 0.15
+    very_sharp_turn_speed: 0.12
+
+    # ────────── A* Global Planner ──────────
+    astar_limit: 100000
+    inflation_mult: 1.5
+    proximity_weight: 3.0
+    goal_search_radius: 0.8
+    goal_search_step: 0.1
+
+    # ────────── Recovery ──────────
+    stuck_timeout: 3.5
+    stuck_radius: 0.12
+    enable_stuck_recovery: false
+    max_recoveries: 3
+    backup_vel: -0.08
+    backup_time: 0.4
+    spin_vel: 0.20
+    spin_duration: 0.6
+    recovery_curve_speed: 0.08
+    recovery_curve_angular: 0.10
+    recovery_curve_duration: 0.5
+
+    # ────────── Navigation ──────────
+    goal_timeout: 90.0
+    replan_interval: 4.0
+    fallback_replan_count: 4
+    debug_tracking: true
+
+    # ────────── Topics ──────────
+    cmd_vel_topic: "/cmd_vel"
