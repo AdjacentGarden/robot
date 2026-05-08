@@ -401,7 +401,6 @@ class PetInteraction():
             # from ..function.ROS2control import ROS2NavigationController
             # controller_cli_path = r"/home/test/code/ros2_ws/src/demo/controller_cli.py"
             # ros2_controller = ROS2NavigationController(controller_cli_path)
-
             _call_logic('start_pet_tracking', target=target_en.lower())
         elif task_type == 'stop_tracking':
             _call_logic('stop_pet_tracking')
@@ -410,7 +409,6 @@ class PetInteraction():
         # 【修改】4. 加上 already_spoken 标志，通知主流程不要重复读
         return json5.dumps({'result': 'success', 'task': task_type, 'response_text': res_text, 'direct_reply': True, 'already_spoken': True}, ensure_ascii=False)
 
-# 2. 人脸识别与管理工具
 class FaceRecognition():
     description = '用于人脸信息的录入、身份识别。需要记住某人时，也就是表示需录入人脸。'
     parameters = [{
